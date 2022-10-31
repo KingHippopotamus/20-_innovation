@@ -1,3 +1,4 @@
+# 下記コマンドを実行します
 # pip install selenium==3.141.0
 # pip install jpholiday
 
@@ -15,13 +16,13 @@ import calendar
 class jobcan_auto:
     # 設定
     driver = webdriver.Chrome('./chromedriver')
-    user_name = 'g-yamaguchi@v-m.co.jp'
-    user_pw = 'yamaguchi0519'
+    user_name = 'ユーザーのメールアドレス'
+    user_pw = 'ユーザーのパスワード'
     year = 2022
     month = 10
-    start_time = '10:00'
-    end_time = '19:00'
-    rest_time = '01:00'
+    start_time = '10:00' # 始業時刻
+    end_time = '19:00' # 終業時刻
+    rest_time = '01:00' # 休憩時間
 
     # インプット取得
     def inputTime(self):
