@@ -2,8 +2,6 @@
 # pip install selenium==3.141.0
 # pip install jpholiday
 
-# https://sites.google.com/chromium.org/driver/ からchromedriverをダウンロード
-
 from selenium import webdriver
 from time import sleep
 from selenium.webdriver.support.ui import Select
