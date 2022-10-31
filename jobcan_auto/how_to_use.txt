@@ -1,0 +1,10 @@
+jobcan_auto.pyをいい感じのところにおきます
+python3をインストール（macはデフォで入っているはず）
+下記コマンドを実行してライブラリをインストール
+pip install selenium==3.141.0
+pip install jpholiday
+ファイル内の設定項目を記入
+ファイルのあるディレクトリで
+python jobcan_auto.py
+を実行
+自動で設定した月の勤怠登録が完了します
