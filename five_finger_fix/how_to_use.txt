@@ -1,0 +1,12 @@
+five_finger_fix.py を任意のディレクトリに配置してください。
+
+必要なライブラリ:
+    pip install requests
+
+環境変数 FAL_API_KEY に API キーを設定しておくと認証が必要な場合に対応できます。
+
+使い方:
+    python five_finger_fix.py 画像1.jpg 画像2.png -o 出力ディレクトリ
+
+指定した複数の画像をまとめて処理し、出力ディレクトリに保存します。
+完了後、結果をまとめた results.zip も出力ディレクトリに作成されます。
