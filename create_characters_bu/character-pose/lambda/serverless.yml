@@ -1,0 +1,43 @@
+service: fal-image-service
+
+provider:
+    name: aws
+    runtime: nodejs20.x
+    region: ap-northeast-1
+    stage: ${opt:stage, 'dev'}
+    architecture: arm64
+    memorySize: 512
+    timeout: 30
+    logRetentionInDays: 14
+    environment:
+        fal_api_key: ${ssm:/fal-image-service/${self:provider.stage}/fal_api_key~true}
+        ALLOWED_ORIGIN: ${ssm:/fal-image-service/${self:provider.stage}/allowed_origin}
+        UPSTREAM_BASE: ${ssm:/fal-image-service/${self:provider.stage}/upstream_base, 'https://api.fal.ai'}
+    httpApi:
+        cors:
+            allowedOrigins:
+                - ${self:provider.environment.ALLOWED_ORIGIN}
+            allowedMethods:
+                - POST
+                - OPTIONS
+            allowedHeaders:
+                - Content-Type
+                - Authorization
+            allowCredentials: false
+            maxAge: 3600
+
+functions:
+    generateImage:
+        handler: index.handler
+        events:
+            - httpApi:
+                  method: POST
+                  path: /api/fal/generate
+
+package:
+    patterns:
+        - index.js
+        - node_modules/**
+
+plugins:
+    - serverless-offline

@@ -1,0 +1,126 @@
+{
+  "/Users/yamaguchigenki/20-_innovation/create_characters/character-pose/lambda/serverless.yml": {
+    "versionFramework": "4.18.1",
+    "servicePath": "/Users/yamaguchigenki/20-_innovation/create_characters/character-pose/lambda/serverless.yml",
+    "serviceConfigFileName": "serverless.yml",
+    "service": {
+      "service": "fal-image-service",
+      "provider": {
+        "name": "aws",
+        "runtime": "nodejs20.x",
+        "region": "ap-northeast-1",
+        "stage": "dev",
+        "architecture": "arm64",
+        "memorySize": 512,
+        "timeout": 30,
+        "logRetentionInDays": 14,
+        "environment": {
+          "fal_api_key": "<REDACTED>",
+          "ALLOWED_ORIGIN": "${ssm:/fal-image-service/dev/allowed_origin}",
+          "UPSTREAM_BASE": "https://api.fal.ai"
+        },
+        "httpApi": {
+          "cors": {
+            "allowedOrigins": [
+              "${self:provider.environment.ALLOWED_ORIGIN}"
+            ],
+            "allowedMethods": [
+              "POST",
+              "OPTIONS"
+            ],
+            "allowedHeaders": [
+              "Content-Type",
+              "Authorization"
+            ],
+            "allowCredentials": "<REDACTED>",
+            "maxAge": 3600
+          }
+        }
+      },
+      "functions": {
+        "generateImage": {
+          "handler": "index.handler",
+          "events": [
+            {
+              "httpApi": {
+                "method": "POST",
+                "path": "/api/fal/generate"
+              }
+            }
+          ]
+        }
+      },
+      "package": {
+        "patterns": [
+          "index.js",
+          "node_modules/**"
+        ]
+      },
+      "plugins": [
+        "serverless-offline"
+      ]
+    },
+    "provider": {
+      "name": "aws",
+      "runtime": "nodejs20.x",
+      "region": "ap-northeast-1",
+      "stage": "dev",
+      "architecture": "arm64",
+      "memorySize": 512,
+      "timeout": 30,
+      "logRetentionInDays": 14,
+      "environment": {
+        "fal_api_key": "<REDACTED>",
+        "ALLOWED_ORIGIN": "${ssm:/fal-image-service/dev/allowed_origin}",
+        "UPSTREAM_BASE": "https://api.fal.ai"
+      },
+      "httpApi": {
+        "cors": {
+          "allowedOrigins": [
+            "${self:provider.environment.ALLOWED_ORIGIN}"
+          ],
+          "allowedMethods": [
+            "POST",
+            "OPTIONS"
+          ],
+          "allowedHeaders": [
+            "Content-Type",
+            "Authorization"
+          ],
+          "allowCredentials": "<REDACTED>",
+          "maxAge": 3600
+        }
+      }
+    },
+    "dashboard": {
+      "isEnabledForService": false,
+      "requiredAuthentication": false,
+      "orgFeaturesInUse": null,
+      "orgObservabilityIntegrations": null,
+      "serviceAppId": null,
+      "serviceProvider": null,
+      "instanceParameters": null
+    },
+    "error": {
+      "message": "Failed to resolve variable '/fal-image-service/dev/fal_api_key~true' with resolver 'ssm' and provider 'default-aws-credential-resolver': ValidationException: Parameter name: can't be prefixed with \"ssm\" (case-insensitive). If formed as a path, it can consist of sub-paths divided by slash symbol; each sub-path can be formed as a mix of letters, numbers and the following 3 symbols .-_",
+      "stack": "Error: Failed to resolve variable '/fal-image-service/dev/fal_api_key~true' with resolver 'ssm' and provider 'default-aws-credential-resolver': ValidationException: Parameter name: can't be prefixed with \"ssm\" (case-insensitive). If formed as a path, it can consist of sub-paths divided by slash symbol; each sub-path can be formed as a mix of letters, numbers and the following 3 symbols .-_\n    at #resolveKey (file:///Users/yamaguchigenki/.serverless/releases/4.18.1/package/dist/sf-core.js:809:25583)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async _ResolverManager.resolve (file:///Users/yamaguchigenki/.serverless/releases/4.18.1/package/dist/sf-core.js:809:31573)\n    at async #handlePlaceholderNode (file:///Users/yamaguchigenki/.serverless/releases/4.18.1/package/dist/sf-core.js:809:30118)\n    at async file:///Users/yamaguchigenki/.serverless/releases/4.18.1/package/dist/sf-core.js:809:27990\n    at async processNodeAndHandleCompletion (file:///Users/yamaguchigenki/.serverless/releases/4.18.1/package/dist/sf-core.js:809:16769)",
+      "code": "RESOLVER_RESOLVE_VARIABLE_ERROR"
+    },
+    "serviceRawFile": "service: fal-image-service\n\nprovider:\n    name: aws\n    runtime: nodejs20.x\n    region: ap-northeast-1\n    stage: ${opt:stage, 'dev'}\n    architecture: arm64\n    memorySize: 512\n    timeout: 30\n    logRetentionInDays: 14\n    environment:\n        fal_api_key: ${ssm:/fal-image-service/${self:provider.stage}/fal_api_key~true}\n        ALLOWED_ORIGIN: ${ssm:/fal-image-service/${self:provider.stage}/allowed_origin}\n        UPSTREAM_BASE: ${ssm:/fal-image-service/${self:provider.stage}/upstream_base, 'https://api.fal.ai'}\n    httpApi:\n        cors:\n            allowedOrigins:\n                - ${self:provider.environment.ALLOWED_ORIGIN}\n            allowedMethods:\n                - POST\n                - OPTIONS\n            allowedHeaders:\n                - Content-Type\n                - Authorization\n            allowCredentials: false\n            maxAge: 3600\n\nfunctions:\n    generateImage:\n        handler: index.handler\n        events:\n            - httpApi:\n                  method: POST\n                  path: /api/fal/generate\n\npackage:\n    patterns:\n        - index.js\n        - node_modules/**\n\nplugins:\n    - serverless-offline\n",
+    "command": [
+      "deploy"
+    ],
+    "options": {
+      "stage": "dev"
+    },
+    "orgId": "a7782022-45e7-4739-b4c2-b1ac5665f09e",
+    "orgName": "wondervm",
+    "userId": "c2390pYtSFKHlrgxP4",
+    "userName": "wondervm",
+    "serviceProviderAwsCfStackId": null,
+    "serviceProviderAwsCfStackCreated": null,
+    "serviceProviderAwsCfStackUpdated": null,
+    "serviceProviderAwsCfStackStatus": null,
+    "serviceProviderAwsCfStackOutputs": null
+  }
+}
