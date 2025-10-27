@@ -1,0 +1,141 @@
+// index.mjs
+
+/**
+ * 画像生成（FAL API プロキシ / HTTP API 用）
+ * CORS: OPTIONS=204、POST/エラー時もヘッダ付与
+ * Node.js 22 ESM
+ *
+ * 必要な環境変数:
+ * - FAL_API_URL
+ * - FAL_API_KEY
+ * - FAL_AUTH_TYPE (任意: 既定 "Key")
+ * - CORS_ALLOW_ORIGIN (任意: 既定 "http://localhost:5173")
+ *
+ * @param {import('aws-lambda').APIGatewayProxyEventV2} event
+ * @returns {Promise<import('aws-lambda').APIGatewayProxyResultV2>}
+ */
+export async function handler(event) {
+    const allowedOrigin = process.env.CORS_ALLOW_ORIGIN || "http://localhost:5173";
+    const falApiUrl = process.env.FAL_API_URL || "";
+    const falApiKey = process.env.FAL_API_KEY || "";
+    const falAuthType = process.env.FAL_AUTH_TYPE || "Key";
+
+    const corsHeaders = {
+        "Access-Control-Allow-Origin": allowedOrigin,
+        "Access-Control-Allow-Methods": "POST,OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type,Authorization",
+        "Vary": "Origin"
+    };
+
+    const method = event?.requestContext?.http?.method || event?.httpMethod || "";
+    if (String(method).toUpperCase() === "OPTIONS") {
+        return { statusCode: 204, headers: corsHeaders };
+    }
+
+    if (!falApiUrl || !falApiKey) {
+        return jsonResponse(500, { ok: false, error: "FAL_API_URL または FAL_API_KEY が未設定です。" }, corsHeaders);
+    }
+    if (String(method).toUpperCase() !== "POST") {
+        return jsonResponse(405, { ok: false, error: `Method Not Allowed: ${method}` }, corsHeaders);
+    }
+
+    console.log("[handler] start", {
+        falApiHost: safeHost(falApiUrl),
+        region: process.env.AWS_REGION,
+        vpcConfigHint: process.env.AWS_LAMBDA_FUNCTION_MEMORY_SIZE // 単なるログ
+    });
+
+    try {
+        // --- 疎通チェック（暫定・問題なければ削ってOK） ---
+        // 3秒だけ https://example.com に HEAD して、外に出られるか確認
+        await quickInternetProbe();
+
+        // ---- ここから本処理 ----
+        const isBase64 = !!event?.isBase64Encoded;
+        const rawBody = event?.body ? (isBase64 ? Buffer.from(event.body, "base64").toString("utf8") : event.body) : "{}";
+        const bodyJson = rawBody ? JSON.parse(rawBody) : {};
+
+        const falHeaders = {
+            "Content-Type": "application/json",
+            "Authorization": `${falAuthType} ${falApiKey}`
+        };
+
+        console.log("[handler] posting to FAL", { url: safeHost(falApiUrl) });
+
+        const controller = new AbortController();
+        const timeoutMs = 120_000;
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+        const falRes = await fetch(falApiUrl, {
+            method: "POST",
+            headers: falHeaders,
+            body: JSON.stringify(bodyJson),
+            signal: controller.signal
+        }).finally(() => clearTimeout(timer));
+
+        console.log("[handler] FAL responded", { status: falRes.status });
+
+        const statusCode = falRes.status;
+        const contentType = falRes.headers.get("content-type");
+        const text = await falRes.text();
+
+        return {
+            statusCode,
+            headers: { ...corsHeaders, "Content-Type": contentType || "application/json" },
+            body: text
+        };
+    } catch (e) {
+        // エラー詳細を CloudWatch へ
+        console.error("[handler] error", {
+            name: e?.name,
+            message: e?.message,
+            code: e?.code,
+            cause: e?.cause?.message || e?.cause,
+            stack: e?.stack
+        });
+
+        // フロントへは簡潔に返す（CORS付き）
+        return jsonResponse(500, {
+            ok: false,
+            error: (e?.message || "Unknown error"),
+            // デバッグ用に短いヒントだけ（本番で不要なら削除）
+            hint: "Lambda からインターネットに出られない可能性（VPC + NAT 未設定 等）",
+        }, corsHeaders);
+    }
+}
+
+/**
+ * 簡易インターネット疎通チェック：3秒で HEAD 204 を期待
+ */
+async function quickInternetProbe() {
+    const controller = new AbortController();
+    const t = setTimeout(() => controller.abort(), 3000);
+    try {
+        const r = await fetch("https://www.google.com/generate_204", {
+            method: "GET",
+            signal: controller.signal
+        });
+        // 200/204 なら十分
+        console.log("[probe] internet ok", { status: r.status });
+    } finally {
+        clearTimeout(t);
+    }
+}
+
+/** ログ用：URLからホストだけ表示 */
+function safeHost(url) {
+    try {
+        const u = new URL(url);
+        return `${u.protocol}//${u.host}${u.pathname}`;
+    } catch {
+        return url;
+    }
+}
+
+function jsonResponse(status, data, headers) {
+    return {
+        statusCode: status,
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+    };
+}
