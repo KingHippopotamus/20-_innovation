@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import axios from 'axios'
 import './VideoGenerator.css'
 
@@ -25,6 +25,84 @@ const VideoGenerator: React.FC = () => {
     cta_text: string
   } | null>(null)
   const [characterImageUrl, setCharacterImageUrl] = useState<string>('')
+  const [isFirstAnalysis, setIsFirstAnalysis] = useState<boolean>(true)
+
+  // プロンプト生成関数
+  const generatePrompt = (info: typeof productInfo) => {
+    if (!info) return ''
+
+    const product_name = info.product_name || '[商材/ブランド名]'
+    const target = info.target_audience || '[メインターゲット]'
+    const catchphrase = info.catchphrase || '[キャッチコピー]'
+    const benefit1 = info.benefit1 || '[ベネフィット1]'
+    const benefit2 = info.benefit2 || '[ベネフィット2]'
+    const offer = info.offer || '[オファー]'
+    const cta_text = info.cta_text || '[CTAテキスト]'
+
+    return `汎用P-MAX広告動画 生成プロンプト（キャラクター画像1点入力）
+
+【目的】 Google P-MAX広告枠（YouTube Shorts, Discover等）向けに、無音再生でもターゲットの注意を引き、行動を喚起する15秒の動画を生成する。
+
+【提供アセット（必須）】
+キャラクター画像（背景透過推奨）
+
+【ユーザー入力（URL分析結果）】
+[商材/ブランド名]：${product_name}
+[メインターゲット]：${target}
+[キャッチコピー]：${catchphrase}
+[ベネフィット1]：${benefit1}
+[ベネフィット2]：${benefit2}
+[オファー（任意）]：${offer}
+[CTAテキスト]：${cta_text}
+
+【AIへの動画生成シーケンス指示】
+
+全体のトーン＆マナー: モダン、スピーディー、信頼感。BGMはアップテンポなインストゥルメンタル。テロップはすべて大きく、読みやすいゴシック体を使用し、背景と強いコントラストをつけること。
+
+▼ シーケンス 1：掴み (0-3秒)
+映像:
+提供されたキャラクター画像を入力画像として使用する。
+このキャラクターに、${target} に向かって手を振ったり、元気にジャンプして登場するようなアニメーション（動き）をつける。
+背景はブランドカラーをベースにした明るくダイナミックな抽象アニメーション。
+テロップ (特大): ${catchphrase}
+
+▼ シーケンス 2：ベネフィット 1 (4-8秒)
+映像:
+キャラクターは画面の隅（例：左下）に移動し、案内役として頷いたり、指をさしたりするリアクションをとる。
+画面中央に ${benefit1} を象徴するシンプルなアイコン（例：歯車、チェックマーク、書類アイコン）がポップアップ表示される。
+テロップ (大・中央): ${benefit1}
+
+▼ シーケンス 3：ベネフィット 2 / オファー (9-12秒)
+映像:
+中央のアイコンとテキストが、${benefit2} または ${offer} の内容に素早く切り替わる。（例：グラフアイコン、カレンダーアイコン）
+キャラクターは驚きや喜びの表情のアニメーションをとる。
+テロップ (大・中央): ${benefit2} または ${offer}
+
+▼ シーケンス 4：CTAとブランド提示 (13-15秒)
+映像:
+画面全体が白またはブランドカラーのクリーンな背景に切り替わる。（キャラクターはここで消えても良い）
+中央にテキストで ${product_name} をロゴのように大きく表示する。（フォントは太く、信頼感のあるもの）
+その下に、行動喚起のボタン風デザインを配置する。
+テロップ (ボタン内・特大): ${cta_text}
+テロップ (画面下部・小): ${product_name} で検索`
+  }
+
+  // プロンプトを再生成する関数
+  const regeneratePrompt = () => {
+    if (productInfo) {
+      const newPrompt = generatePrompt(productInfo)
+      setPrompt(newPrompt)
+    }
+  }
+
+  // 分析直後（初回のみ）プロンプトを自動生成
+  useEffect(() => {
+    if (productInfo && isFirstAnalysis) {
+      const newPrompt = generatePrompt(productInfo)
+      setPrompt(newPrompt)
+      setIsFirstAnalysis(false)
+    }
+  }, [productInfo, isFirstAnalysis])
 
   const handleAnalyze = async () => {
     if (!pageUrl.trim()) {
@@ -36,6 +114,7 @@ const VideoGenerator: React.FC = () => {
     setAnalyzing(true)
     setError(null)
     setProductInfo(null)
+    setIsFirstAnalysis(true) // 新しい分析なので初回フラグをリセット
 
     try {
       console.log('📡 Sending request to /api/analyze-page...')
@@ -61,10 +140,8 @@ const VideoGenerator: React.FC = () => {
         setCharacterImageUrl(response.data.character_image_url)
       }
 
-      // 生成されたプロンプトをテキストエリアに設定
-      if (response.data.generated_prompt) {
-        setPrompt(response.data.generated_prompt)
-      }
+      // 初回のみプロンプトを自動生成（分析直後）
+      // 2回目以降は「プロンプトを再生成」ボタンを使用
 
     } catch (err: any) {
       console.error('❌ Analysis error occurred:', err)
@@ -232,6 +309,16 @@ const VideoGenerator: React.FC = () => {
               style={{ width: '100%', padding: '8px', marginTop: '5px' }}
             />
           </div>
+        )}
+
+        {productInfo && (
+          <button
+            onClick={regeneratePrompt}
+            style={{ marginBottom: '10px', background: '#2196f3', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
+            type="button"
+          >
+            🔄 商材情報からプロンプトを再生成
+          </button>
         )}
 
         <label htmlFor="prompt">動画生成プロンプト</label>

@@ -1,19 +1,15 @@
 """
-ChatGPT (Lambda経由) を使用してページを分析し、動画生成プロンプトを生成する
+Gemini (Lambda経由) を使用してページを分析し、動画生成プロンプトを生成する
 """
 import os
 import requests
-import time
 from bs4 import BeautifulSoup
 from typing import Dict, Optional
+from .gemini_client import GeminiClient
 
 
 class PageAnalyzer:
-    """ChatGPT (Lambda経由) を使用してページコンテンツを分析"""
-
-    LAMBDA_INVOKE_URL = "https://xbofudi6a9.execute-api.ap-northeast-1.amazonaws.com/default/invokeChatGPTStepFunction"
-    LAMBDA_RESULT_URL = "https://j0y48q4hvj.execute-api.ap-northeast-1.amazonaws.com/default/getChatGPTResults"
-    MAX_ATTEMPTS = 60
+    """Gemini (Lambda経由) を使用してページコンテンツを分析"""
 
     def __init__(self, secret_key: Optional[str] = None):
         """
@@ -21,6 +17,7 @@ class PageAnalyzer:
             secret_key: Lambda Secret Key（環境変数 LAMBDA_SECRET_KEY から取得も可能）
         """
         self.secret_key = secret_key or os.getenv('LAMBDA_SECRET_KEY')
+        self.gemini_client = GeminiClient(secret_key)
 
     def analyze_page(self, url: str) -> Dict[str, str]:
         """
@@ -63,8 +60,8 @@ class PageAnalyzer:
             if len(text_content) > 30000:
                 text_content = text_content[:30000]
 
-            # ChatGPT (Lambda経由) で分析
-            system_prompt = """あなたは、指定されたWebページのコンテンツを分析し、P-MAX広告用の動画生成に必要な情報を抽出するAIアシスタントです。
+            # Gemini (Lambda経由) で分析
+            prompt = f"""あなたは、指定されたWebページのコンテンツを分析し、P-MAX広告用の動画生成に必要な情報を抽出するAIアシスタントです。
 
 以下の7つの要素を抽出・推測してください：
 
@@ -83,9 +80,12 @@ class PageAnalyzer:
 ベネフィット1: [ベネフィット1]
 ベネフィット2: [ベネフィット2]
 オファー: [オファー]
-CTAテキスト: [CTAテキスト]"""
+CTAテキスト: [CTAテキスト]
 
-            analysis_text = self._invoke_chatgpt(system_prompt, f"【ウェブページの内容】\n{text_content}")
+【ウェブページの内容】
+{text_content}"""
+
+            analysis_text = self._invoke_gemini(prompt)
 
             # 分析結果をパース
             product_info = self._parse_analysis(analysis_text)
@@ -110,7 +110,7 @@ CTAテキスト: [CTAテキスト]"""
             return {'error': f'Page analysis failed: {str(e)}'}
 
     def _parse_analysis(self, analysis_text: str) -> Dict[str, str]:
-        """ChatGPTの分析結果をパースする"""
+        """Geminiの分析結果をパースする"""
         result = {}
 
         lines = analysis_text.split('\n')
@@ -229,160 +229,16 @@ CTAテキスト: [CTAテキスト]"""
 
         return prompt
 
-    def _invoke_chatgpt(self, system_prompt: str, user_content: str) -> str:
+    def _invoke_gemini(self, prompt: str, model: Optional[str] = None) -> str:
         """
-        Lambda経由でChatGPTを呼び出してレスポンスを取得
+        Lambda経由でGeminiを呼び出してレスポンスを取得
+        （GeminiClientクラスを使用）
 
         Args:
-            system_prompt: システムプロンプト
-            user_content: ユーザーコンテンツ
+            prompt: 分析プロンプト
+            model: 使用するモデル名（省略時はデフォルト）
 
         Returns:
-            ChatGPTのレスポンステキスト
+            Geminiのレスポンステキスト
         """
-        # 1. メッセージをフォーマット
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_content}
-        ]
-
-        # 2. StepFunctionを起動
-        execution_arn = self._invoke_step_function(messages)
-
-        # 3. 結果をポーリング
-        result = self._poll_for_results(execution_arn)
-
-        # 4. レスポンスからメッセージを抽出
-        return self._extract_message(result)
-
-    def _invoke_step_function(self, messages: list) -> str:
-        """
-        Lambda StepFunctionを起動
-
-        Args:
-            messages: ChatGPTに送信するメッセージ配列
-
-        Returns:
-            executionArn
-        """
-        import json
-
-        payload = {
-            "secretKey": self.secret_key,
-            "messages": messages
-        }
-
-        headers = {
-            'Content-Type': 'application/json; charset=utf-8'
-        }
-
-        json_payload = json.dumps(payload, ensure_ascii=False).encode('utf-8')
-
-        response = requests.post(
-            self.LAMBDA_INVOKE_URL,
-            data=json_payload,
-            headers=headers,
-            timeout=30
-        )
-        response.raise_for_status()
-
-        result = response.json()
-        return result.get('executionArn')
-
-    def _poll_for_results(self, execution_arn: str) -> Dict:
-        """
-        StepFunctionの実行結果をポーリングで取得
-
-        Args:
-            execution_arn: 実行ARN
-
-        Returns:
-            実行結果
-        """
-        import json
-        import logging
-        logger = logging.getLogger(__name__)
-
-        payload = {
-            "secretKey": self.secret_key,
-            "executionArn": execution_arn
-        }
-
-        # PHPと同じように、普通のJSON文字列を送る（API Gatewayが自動でbase64エンコードする）
-        json_str = json.dumps(payload, ensure_ascii=False)
-
-        logger.info(f"🔍 Polling payload: {payload}")
-
-        for attempt in range(self.MAX_ATTEMPTS):
-            # Content-Typeを設定せず、dataで生のJSON文字列を送る（PHPと同じ挙動）
-            response = requests.post(
-                self.LAMBDA_RESULT_URL,
-                data=json_str,
-                timeout=30
-            )
-
-            logger.info(f"🔍 Response status: {response.status_code}")
-            logger.info(f"🔍 Response text: {response.text}")
-
-            response.raise_for_status()
-
-            result = response.json()
-            status = result.get('status')
-
-            if status == 'SUCCEEDED':
-                return result
-            elif status == 'FAILED':
-                raise Exception(f"StepFunction execution failed: {result.get('error')}")
-            elif status == 'RUNNING':
-                time.sleep(1)  # 1秒待機してリトライ
-                continue
-            else:
-                raise Exception(f"Unknown status: {status}")
-
-        raise Exception("Polling timeout: Max attempts reached")
-
-    def _extract_message(self, result: Dict) -> str:
-        """
-        実行結果からChatGPTのメッセージを抽出
-
-        Args:
-            result: StepFunctionの実行結果
-
-        Returns:
-            ChatGPTのメッセージテキスト
-        """
-        import json
-        import logging
-        logger = logging.getLogger(__name__)
-
-        try:
-            output = result.get('output', '{}')
-
-            if isinstance(output, str):
-                output = json.loads(output)
-
-            body = output.get('body', '{}')
-
-            if isinstance(body, str):
-                body = json.loads(body)
-
-            # bodyには {"message": "..."} という構造が入っている
-            message_content = body.get('message', '')
-
-            if message_content:
-                logger.info(f"✅ Extracted message: {message_content[:200]}...")
-                return message_content
-
-            # 代替: function_call.choices[0].message.contentから取得
-            function_call = output.get('function_call', {})
-            choices = function_call.get('choices', [])
-            if choices and len(choices) > 0:
-                content = choices[0].get('message', {}).get('content', '')
-                if content:
-                    logger.info(f"✅ Extracted from function_call: {content[:200]}...")
-                    return content
-
-            raise Exception("No message content found in response")
-        except Exception as e:
-            logger.error(f"❌ Extract error: {str(e)}", exc_info=True)
-            raise Exception(f"Failed to extract message from response: {str(e)}")
+        return self.gemini_client.invoke_gemini(prompt, model)
