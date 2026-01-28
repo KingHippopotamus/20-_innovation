@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Friendly Speed Insights - サイト速度診断</title>
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Markdown表示用 -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- ヘッダー -->
+        <header class="header">
+            <h1>Friendly Speed Insights</h1>
+            <p class="subtitle">あなたのサイトの速度を診断し、改善点を分かりやすくお伝えします</p>
+        </header>
+
+        <!-- 設定（API Key） -->
+        <section class="settings-section">
+            <details>
+                <summary>AI設定（Gemini API Key）</summary>
+                <div class="input-wrapper" style="margin-top: 10px;">
+                    <input type="password" id="api-key-input" placeholder="Gemini API Key (AI Studioで取得)" style="width: 100%; padding: 8px;">
+                    <p style="font-size: 12px; color: #666; margin-top: 5px;">※キーはブラウザに保存されます。サーバーには送信されません。</p>
+                </div>
+            </details>
+        </section>
+
+        <!-- 入力エリア -->
+        <section class="input-section">
+            <form id="analyze-form">
+                <div class="input-wrapper">
+                    <input
+                        type="url"
+                        id="url-input"
+                        placeholder="https://example.com"
+                        required
+                        autocomplete="url"
+                    >
+                    <button type="submit" id="analyze-btn">
+                        <span class="btn-text">診断する</span>
+                        <span class="btn-loading" style="display: none;">診断中...</span>
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- ローディング -->
+        <section class="loading-section" id="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p class="loading-text">診断中です...<br><small>（10〜30秒ほどかかります）</small></p>
+        </section>
+
+        <!-- エラー表示 -->
+        <section class="error-section" id="error-section" style="display: none;">
+            <div class="error-box">
+                <p class="error-message" id="error-message"></p>
+            </div>
+        </section>
+
+        <!-- スコア表示 -->
+        <section class="score-section" id="score-section" style="display: none;">
+            <div class="score-card">
+                <div class="score-circle" id="score-circle">
+                    <span class="score-number" id="score-number">0</span>
+                </div>
+                <p class="score-label">パフォーマンススコア</p>
+                <p class="score-description" id="score-description"></p>
+            </div>
+
+            <!-- 時短効果の合計 -->
+            <div class="savings-total" id="savings-total" style="display: none;">
+                <p>改善すると約 <strong id="total-savings">0</strong> 秒速くなります</p>
+            </div>
+        </section>
+
+        <!-- アクションリスト -->
+        <section class="actions-section" id="actions-section" style="display: none;">
+            <h2 class="actions-title">改善ポイント</h2>
+            <p class="actions-subtitle">効果が高い順に表示しています</p>
+            <div class="action-list" id="action-list"></div>
+        </section>
+
+        <!-- AIアドバイス -->
+        <section class="ai-section" id="ai-section" style="display: none; margin-top: 30px; padding: 20px; background: #f0f7ff; border-radius: 12px; border: 2px solid #cce3ff;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                <span style="font-size: 24px;">🤖</span>
+                <h2 style="margin: 0; font-size: 1.2rem; color: #0056b3;">AI先生の特別アドバイス</h2>
+            </div>
+            <div id="ai-content" class="markdown-body" style="font-size: 0.95rem; line-height: 1.6; color: #333;">
+                <p>分析中... HTMLとスコアを見て、具体的な改善案を考えています...</p>
+            </div>
+        </section>
+
+        <!-- フッター -->
+        <footer class="footer">
+            <p>Powered by <a href="https://developers.google.com/speed/docs/insights/v5/about" target="_blank" rel="noopener">Google PageSpeed Insights API</a></p>
+        </footer>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>

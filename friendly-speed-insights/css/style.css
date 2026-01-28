@@ -1,0 +1,418 @@
+/* ===================================
+   Friendly Speed Insights - Styles
+   =================================== */
+
+/* リセット・基本設定 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    color: #333;
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 40px 20px;
+}
+
+/* ヘッダー */
+.header {
+    text-align: center;
+    margin-bottom: 40px;
+    color: white;
+}
+
+.header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.subtitle {
+    font-size: 1rem;
+    opacity: 0.9;
+}
+
+/* 入力セクション */
+.input-section {
+    background: white;
+    padding: 30px;
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    margin-bottom: 30px;
+}
+
+.input-wrapper {
+    display: flex;
+    gap: 12px;
+}
+
+#url-input {
+    flex: 1;
+    padding: 16px 20px;
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    font-size: 16px;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+#url-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+}
+
+#analyze-btn {
+    padding: 16px 32px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    white-space: nowrap;
+}
+
+#analyze-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+}
+
+#analyze-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* ローディング */
+.loading-section {
+    text-align: center;
+    padding: 40px;
+    background: white;
+    border-radius: 16px;
+    margin-bottom: 30px;
+}
+
+.spinner {
+    width: 60px;
+    height: 60px;
+    border: 4px solid #e0e0e0;
+    border-top-color: #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.loading-text {
+    color: #666;
+}
+
+.loading-text small {
+    color: #999;
+}
+
+/* エラー表示 */
+.error-section {
+    margin-bottom: 30px;
+}
+
+.error-box {
+    background: #fff5f5;
+    border: 2px solid #ff4e42;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+}
+
+.error-message {
+    color: #c53030;
+    font-weight: 500;
+}
+
+/* スコアセクション */
+.score-section {
+    margin-bottom: 30px;
+}
+
+.score-card {
+    background: white;
+    border-radius: 16px;
+    padding: 40px;
+    text-align: center;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+
+.score-circle {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    border: 8px solid;
+    transition: all 0.3s;
+}
+
+/* 信号色 */
+.score-circle.score-good {
+    border-color: #0cce6b;
+    background: rgba(12, 206, 107, 0.1);
+}
+
+.score-circle.score-average {
+    border-color: #ffa400;
+    background: rgba(255, 164, 0, 0.1);
+}
+
+.score-circle.score-poor {
+    border-color: #ff4e42;
+    background: rgba(255, 78, 66, 0.1);
+}
+
+.score-number {
+    font-size: 48px;
+    font-weight: 700;
+}
+
+.score-good .score-number { color: #0cce6b; }
+.score-average .score-number { color: #ffa400; }
+.score-poor .score-number { color: #ff4e42; }
+
+.score-label {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 10px;
+}
+
+.score-description {
+    font-size: 16px;
+    color: #333;
+    font-weight: 500;
+}
+
+/* 時短効果の合計 */
+.savings-total {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+    margin-top: 20px;
+    font-size: 18px;
+}
+
+.savings-total strong {
+    font-size: 24px;
+    font-weight: 700;
+}
+
+/* アクションセクション */
+.actions-section {
+    margin-bottom: 30px;
+}
+
+.actions-title {
+    color: white;
+    font-size: 1.5rem;
+    margin-bottom: 8px;
+}
+
+.actions-subtitle {
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 20px;
+    font-size: 14px;
+}
+
+/* アクションカード */
+.action-card {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.action-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+}
+
+.action-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 12px;
+}
+
+.action-number {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.action-title {
+    flex: 1;
+    font-weight: 600;
+    font-size: 16px;
+    color: #333;
+}
+
+.action-savings {
+    background: #e8f5e9;
+    color: #2e7d32;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.action-description {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 16px;
+    line-height: 1.7;
+}
+
+.detail-btn {
+    background: #f5f5f5;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #666;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    width: 100%;
+}
+
+.detail-btn:hover {
+    background: #667eea;
+    color: white;
+}
+
+.action-detail {
+    display: none;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #eee;
+}
+
+.action-detail.open {
+    display: block;
+}
+
+.action-detail strong {
+    display: block;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.action-detail pre {
+    background: #f8f9fa;
+    padding: 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.8;
+    white-space: pre-wrap;
+    font-family: inherit;
+    color: #555;
+}
+
+/* 改善不要メッセージ */
+.no-actions {
+    background: white;
+    padding: 40px;
+    border-radius: 12px;
+    text-align: center;
+    color: #0cce6b;
+    font-weight: 500;
+}
+
+/* フッター */
+.footer {
+    text-align: center;
+    padding: 20px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 12px;
+}
+
+.footer a {
+    color: white;
+    text-decoration: none;
+}
+
+.footer a:hover {
+    text-decoration: underline;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 600px) {
+    .container {
+        padding: 20px 16px;
+    }
+
+    .header h1 {
+        font-size: 1.5rem;
+    }
+
+    .input-wrapper {
+        flex-direction: column;
+    }
+
+    #analyze-btn {
+        width: 100%;
+    }
+
+    .input-section {
+        padding: 20px;
+    }
+
+    .score-card {
+        padding: 30px 20px;
+    }
+
+    .score-circle {
+        width: 120px;
+        height: 120px;
+    }
+
+    .score-number {
+        font-size: 40px;
+    }
+
+    .action-header {
+        flex-wrap: wrap;
+    }
+
+    .action-savings {
+        order: 3;
+        width: 100%;
+        text-align: center;
+        margin-top: 8px;
+    }
+}
