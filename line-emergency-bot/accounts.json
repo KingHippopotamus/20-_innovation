@@ -1,0 +1,18 @@
+{
+  "groups": {
+    "C88f13b67145159b5d254de94c04cc9ee": {
+      "client_name": "テストクライアント",
+      "google_ads": {
+        "customer_id": "placeholder"
+      },
+      "yahoo_ads": {
+        "search_account_id": "placeholder",
+        "display_account_id": "placeholder"
+      }
+    }
+  },
+  "responsible_person": {
+    "name": "担当者名",
+    "phone": "+817089396281"
+  }
+}
