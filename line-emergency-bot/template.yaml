@@ -1,0 +1,207 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: LINE Ad Control Bot - Ad delivery pause/resume via LINE + AI phone call
+
+Globals:
+  Function:
+    Timeout: 30
+    Runtime: python3.11
+    MemorySize: 256
+    Environment:
+      Variables:
+        LINE_CHANNEL_SECRET: !Ref LineChannelSecret
+        LINE_CHANNEL_ACCESS_TOKEN: !Ref LineChannelAccessToken
+        GEMINI_API_KEY: !Ref GeminiApiKey
+        TWILIO_ACCOUNT_SID: !Ref TwilioAccountSid
+        TWILIO_AUTH_TOKEN: !Ref TwilioAuthToken
+        TWILIO_PHONE_NUMBER: !Ref TwilioPhoneNumber
+        RESPONSIBLE_PERSON_PHONE: !Ref ResponsiblePersonPhone
+        GOOGLE_ADS_DEVELOPER_TOKEN: !Ref GoogleAdsDeveloperToken
+        GOOGLE_ADS_CLIENT_ID: !Ref GoogleAdsClientId
+        GOOGLE_ADS_CLIENT_SECRET: !Ref GoogleAdsClientSecret
+        GOOGLE_ADS_REFRESH_TOKEN: !Ref GoogleAdsRefreshToken
+        GOOGLE_ADS_LOGIN_CUSTOMER_ID: !Ref GoogleAdsLoginCustomerId
+        YAHOO_ADS_CLIENT_ID: !Ref YahooAdsClientId
+        YAHOO_ADS_CLIENT_SECRET: !Ref YahooAdsClientSecret
+        YAHOO_ADS_REFRESH_TOKEN: !Ref YahooAdsRefreshToken
+        DYNAMODB_TABLE_NAME: !Ref ConversationSessionsTable
+        WEBSOCKET_API_URL: !Sub "wss://${VoiceWebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/prod"
+
+Parameters:
+  LineChannelSecret:
+    Type: String
+    NoEcho: true
+  LineChannelAccessToken:
+    Type: String
+    NoEcho: true
+  GeminiApiKey:
+    Type: String
+    NoEcho: true
+  TwilioAccountSid:
+    Type: String
+    NoEcho: true
+  TwilioAuthToken:
+    Type: String
+    NoEcho: true
+  TwilioPhoneNumber:
+    Type: String
+  ResponsiblePersonPhone:
+    Type: String
+  GoogleAdsDeveloperToken:
+    Type: String
+    NoEcho: true
+  GoogleAdsClientId:
+    Type: String
+    NoEcho: true
+  GoogleAdsClientSecret:
+    Type: String
+    NoEcho: true
+  GoogleAdsRefreshToken:
+    Type: String
+    NoEcho: true
+  GoogleAdsLoginCustomerId:
+    Type: String
+  YahooAdsClientId:
+    Type: String
+    NoEcho: true
+  YahooAdsClientSecret:
+    Type: String
+    NoEcho: true
+  YahooAdsRefreshToken:
+    Type: String
+    NoEcho: true
+
+Resources:
+  # ========================================
+  # DynamoDB Table
+  # ========================================
+  ConversationSessionsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ConversationSessions
+      AttributeDefinitions:
+        - AttributeName: session_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: session_id
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+
+  # ========================================
+  # LINE Webhook Lambda (REST API)
+  # ========================================
+  LineWebhookFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src.handlers.line_webhook.handler
+      Timeout: 60
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ConversationSessionsTable
+      Events:
+        Webhook:
+          Type: Api
+          Properties:
+            Path: /webhook
+            Method: post
+
+  # ========================================
+  # Voice WebSocket Lambda
+  # ========================================
+  VoiceWebSocketFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src.handlers.voice_ws.handler
+      Timeout: 30
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ConversationSessionsTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - execute-api:ManageConnections
+              Resource: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${VoiceWebSocketApi}/*"
+
+  # ========================================
+  # WebSocket API
+  # ========================================
+  VoiceWebSocketApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: VoiceWebSocketApi
+      ProtocolType: WEBSOCKET
+      RouteSelectionExpression: "$request.body.type"
+
+  VoiceWebSocketStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref VoiceWebSocketApi
+      StageName: prod
+      AutoDeploy: true
+
+  # $connect route
+  ConnectRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref VoiceWebSocketApi
+      RouteKey: $connect
+      Target: !Sub "integrations/${ConnectIntegration}"
+
+  ConnectIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref VoiceWebSocketApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${VoiceWebSocketFunction.Arn}/invocations"
+
+  # $disconnect route
+  DisconnectRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref VoiceWebSocketApi
+      RouteKey: $disconnect
+      Target: !Sub "integrations/${DisconnectIntegration}"
+
+  DisconnectIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref VoiceWebSocketApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${VoiceWebSocketFunction.Arn}/invocations"
+
+  # $default route
+  DefaultRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref VoiceWebSocketApi
+      RouteKey: $default
+      Target: !Sub "integrations/${DefaultIntegration}"
+
+  DefaultIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref VoiceWebSocketApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${VoiceWebSocketFunction.Arn}/invocations"
+
+  # Lambda permissions for WebSocket API
+  VoiceWebSocketPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref VoiceWebSocketFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${VoiceWebSocketApi}/*"
+
+Outputs:
+  LineWebhookUrl:
+    Description: LINE Webhook URL
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/webhook"
+  WebSocketUrl:
+    Description: WebSocket URL for ConversationRelay
+    Value: !Sub "wss://${VoiceWebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/prod"
