@@ -7,7 +7,7 @@
 // ===================================
 
 // GASのWebアプリURL（デプロイ後に設定してください）
-const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwrZlwzteRg8DIyFNxgLcWQQVGMD8Y0vQoCOqMdxcNq1q5dLLcGYNMmkebdBmn29F0/exec';
+const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbxQHV3Z-g3iXUdjKEmEbC9lMpLh05_-ZkKDZ9UyDtkgyhY8-VkpSteMJIeaqG21uYN0Ww/exec';
 
 // 対象の5項目（フィルタリング）
 const TARGET_AUDITS = [
